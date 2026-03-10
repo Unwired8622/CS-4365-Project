@@ -11,11 +11,11 @@ def start_client():
             print("Type a message to echo (or 'quit' to exit):")
 
             while True:
-                msg = input("You: ")
-                if msg.lower() == 'quit':
+                message = input("You: ")
+                if message.lower() == 'quit':
                     break
                 
-                client_socket.sendall(msg.encode('utf-8'))
+                client_socket.sendall(message.encode('utf-8'))
                 
                 response = client_socket.recv(1024)
                 print(f"Server Echo: {response.decode('utf-8')}")
