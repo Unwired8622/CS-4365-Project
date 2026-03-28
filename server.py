@@ -1,23 +1,75 @@
 import socket
 import threading
+import struct
+import os
 
 HOST = '127.0.0.1' 
 PORT = 65432
+UPLOAD_DIR = 'uploads'
+
+if not os.path.exists(UPLOAD_DIR):
+    os.makedirs(UPLOAD_DIR)
+
+def recvAll(sock, n):
+    data = bytearray()
+    while len(data) < n:
+        packet = sock.recv(n - len(data))
+        if not packet:
+            return None
+        data.extend(packet)
+    return data
 
 def handleClientConnection(conn, addr):
     print(f"New connection from {addr} connected.")
     try:
+        activeFile = None
         while True:
-            data = conn.recv(1024)
-            if not data:
+            header = recvAll(conn, 4)
+            if not header:
                 break
-            message = data.decode('utf-8')
-            print(f"{addr} Received: {message}")
             
-            conn.sendall(data)
+            payload_len = struct.unpack('!I', header)[0]
+            
+            payload = recvAll(conn, payload_len)
+            if not payload:
+                break
+            
+            commandID = payload[0]
+            data = payload[1:]
+            
+            if commandID == 0x01:
+                message = data.decode('utf-8')
+                print(f"{addr} Received Echo: {message}")
+                conn.sendall(header + payload)
+                
+            elif commandID == 0x02:
+                filename = data.decode('utf-8')
+                print(f"{addr} Starting upload of: {filename}")
+                filePath = os.path.join(UPLOAD_DIR, filename)
+                activeFile = open(filePath, 'wb')
+                
+            elif commandID == 0x03:
+                if activeFile:
+                    activeFile.write(data)
+                else:
+                    print(f"Error: Received file data without metadata from {addr}")
+            
+            elif commandID == 0x04:
+                if activeFile:
+                    activeFile.close()
+                    activeFile = None
+                    print(f"File upload complete from {addr}")
+                    messageAck = "File upload successful".encode('utf-8')
+                    ackHeader = struct.pack('!I', len(messageAck) + 1)
+                    conn.sendall(ackHeader + b'\x01' + messageAck)
+
     except ConnectionResetError:
         print(f"Connection lost with {addr}")
+    except Exception as e:
+        print(f"Error handling client {addr}: {e}")
     finally:
+        if activeFile:
+            activeFile.close()
         conn.close()
         print(f"{addr} closed.")
 
