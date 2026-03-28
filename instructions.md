@@ -14,5 +14,5 @@ python client.py
 This starts a TCP client
 (Note that multiple clients can be created, but each one is created in its own separate terminal)
 When prompted in the terminal, a client can send a message to be echoed back by the server.
-A client can also upload a file to the server by typing upload <filename>. This file will appear in the 'uploads' folder in the project directory.
+A client can also upload a file to the server by typing upload filename. This file will appear in the 'uploads' folder in the project directory.
 Typing 'quit' will end the client's process.
