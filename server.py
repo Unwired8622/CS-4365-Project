@@ -2,6 +2,7 @@ import socket
 import threading
 import struct
 import os
+from rag_pipeline import RAGPipeline
 
 HOST = '127.0.0.1' 
 PORT = 65432
@@ -9,6 +10,10 @@ UPLOAD_DIR = 'uploads'
 
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
+
+rag = RAGPipeline(UPLOAD_DIR)
+
+BASE_THREADS = threading.active_count()
 
 def recvAll(sock, n):
     data = bytearray()
@@ -59,7 +64,12 @@ def handleClientConnection(conn, addr):
                     activeFile.close()
                     activeFile = None
                     print(f"File upload complete from {addr}")
-                    messageAck = "File upload successful".encode('utf-8')
+                    
+                    # Trigger re-indexing for the vectorization layer
+                    print("Updating AI Vectorization Layer...")
+                    rag.reload_documents()
+                    
+                    messageAck = "File upload successful and indexed".encode('utf-8')
                     ackHeader = struct.pack('!I', len(messageAck) + 1)
                     conn.sendall(ackHeader + b'\x01' + messageAck)
 
@@ -83,7 +93,7 @@ def runServer():
         conn, addr = server.accept()
         thread = threading.Thread(target=handleClientConnection, args=(conn, addr))
         thread.start()
-        print(f"Current active clients: {threading.active_count() - 1}")
+        print(f"Current active clients: {threading.active_count() - BASE_THREADS}")
 
 if __name__ == "__main__":
     runServer()
