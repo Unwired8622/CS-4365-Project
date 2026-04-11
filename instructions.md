@@ -11,6 +11,7 @@ cd CS-4365-Project
 3. Install Dependencies
 bash
 pip install -r requirements.txt
+Also an openrouter API key must be created.
 
 ./venv/bin/python server.py
 This starts the TCP server
