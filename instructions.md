@@ -1,29 +1,70 @@
-# CS-4365-Project
+# Client/Server Context Searching (CS 4365/6365)
 
-Checkpoint 2 Overview
-This checkpoint of the project creates a TCP client/server network that allows clients to send messages to a server and receive an echo back of their message. It also allows clients to upload files to the server, which are then indexed by the server for semantic search.
-Installation
-Clone the repository:
-git clone https://github.com/Unwired8622/CS-4365-Project.git
-cd CS-4365-Project
+This project implements a secure TCP client-server system featuring advanced AI-powered semantic search. Users can upload text documents to a central server, which automatically indexes them using a custom RAG (Retrieval-Augmented Generation) pipeline and enables natural language querying via Grok AI.
 
+## Project Status: Final Delivery (Checkpoint 6 Complete)
 
-3. Install Dependencies
-bash
-pip install -r requirements.txt
-Also an openrouter API key must be created.
+### Features
+- **Binary File Transfer**: Robust protocol for uploading `.txt` files.
+- **AI Vectorization Layer**: Semantic indexing using `SentenceTransformers`.
+- **Reasoning Engine**: Natural language answering powered by **Grok 3 (via OpenRouter)**.
+- **Dynamic Re-indexing**: The server automatically updates its brain whenever a new file is uploaded.
 
-./venv/bin/python server.py
-This starts the TCP server
+---
 
-In a separate terminal, run:
-./venv/bin/python client.py
-This starts a TCP client
-(Note that multiple clients can be created, but each one is created in its own separate terminal)
+## Installation & Setup
 
-When prompted in the terminal, a client can send a message to be echoed back by the server using the echo command.
-A client can also upload a file to the server by typing upload filename. This file will appear in the 'uploads' folder in the project directory.
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/Unwired8622/CS-4365-Project.git
+   cd CS-4365-Project
+   ```
 
-Typing 'quit' will end the client's process.
+2. **Setup Virtual Environment & Dependencies:**
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate  # On macOS/Linux
+   pip install -r requirements.txt
+   ```
 
-To upload a file to be embedded, type 'upload filename' in the client terminal. The file will be embedded and indexed by the server. To verify this, you can type open a new terminal and enter the command: ./venv/bin/python rag_pipeline.py. This will run the test code in the pipeline and print the results to the terminal.
+3. **Configure Environment Variables:**
+   Create a `.env` file in the root directory (using `.env.template` as a guide):
+   ```env
+   OPENROUTER_API_KEY=your_key_here
+   OPENROUTER_MODEL=x-ai/grok-3-beta
+   ```
+
+---
+
+## Execution
+
+### 1. Start the Server
+The server manages the RAG pipeline and handles client requests.
+```bash
+python3 server.py
+```
+
+### 2. Start the Client
+Launch the interactive CLI in a new terminal window:
+```bash
+python3 client.py
+```
+
+---
+
+## Client Commands
+
+| Command | Description |
+|---------|-------------|
+| `upload <filename>` | Upload and index a text file (e.g., `upload lore.txt`) |
+| `search <query>` | Ask a natural language question (e.g., `search Who is Frodo?`) |
+| `list` | Show all documents currently indexed on the server |
+| `echo <message>` | Verify the TCP connection with a simple echo |
+| `quit` | Safely disconnect and exit the application |
+
+---
+
+## Technical Details
+- **Natural Language Search**: Uses `all-MiniLM-L6-v2` for local embeddings and `Grok AI` for context-aware reasoning.
+- **Protocol**: Custom framing with 4-byte length headers and command ID bytes.
+- **Concurrency**: Multi-threaded server supporting multiple simultaneous client connections.

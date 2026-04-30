@@ -65,13 +65,40 @@ def handleClientConnection(conn, addr):
                     activeFile = None
                     print(f"File upload complete from {addr}")
                     
-                    # Trigger re-indexing for the vectorization layer
                     print("Updating AI Vectorization Layer...")
                     rag.reload_documents()
                     
                     messageAck = "File upload successful and indexed".encode('utf-8')
                     ackHeader = struct.pack('!I', len(messageAck) + 1)
                     conn.sendall(ackHeader + b'\x01' + messageAck)
+
+            elif commandID == 0x05:
+                query_text = data.decode('utf-8')
+                print(f"{addr} Search Query: {query_text}")
+                
+                # Retrieval
+                context = rag.query(query_text)
+                
+                # Reasoning
+                answer = rag.generate_answer(query_text, context)
+                
+                sources = list(set([c['filename'] for c in context]))
+                response_payload = f"ANSWER: {answer}\nSOURCES: {', '.join(sources)}".encode('utf-8')
+                
+                ackHeader = struct.pack('!I', len(response_payload) + 1)
+                conn.sendall(ackHeader + b'\x05' + response_payload)
+
+            elif commandID == 0x06:
+                print(f"{addr} Requesting indexed file list")
+                unique_files = sorted(list(set(rag.filenames)))
+                if not unique_files:
+                    response_text = "No documents indexed."
+                else:
+                    response_text = "Indexed Documents:\n - " + "\n - ".join(unique_files)
+                
+                response_payload = response_text.encode('utf-8')
+                ackHeader = struct.pack('!I', len(response_payload) + 1)
+                conn.sendall(ackHeader + b'\x06' + response_payload)
 
     except ConnectionResetError:
         print(f"Connection lost with {addr}")
